@@ -47,4 +47,5 @@ Built with:
 - Removing pieces due missed capture feature;
 - King capture mecanism;
 - Integration and unitary tests;
-- Sound effects optimization
+- Sound effects optimization;
+- Online multiplayer with web sockets.
