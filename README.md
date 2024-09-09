@@ -49,3 +49,8 @@ Built with:
 - Integration and unitary tests;
 - Sound effects optimization;
 - Online multiplayer with web sockets.
+
+
+## Live app
+Acess the live project by clicking on the link bellow:
+https://react-js-checkers-scapin-kcmo5m5gz-priscila-scapins-projects.vercel.app/
