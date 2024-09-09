@@ -51,8 +51,8 @@ const Board = () => {
   return (
     <>
       <div>
-        <h1>Jogador atual: {currentPlayer?.name}</h1>
-        <h2>Tempo restante: {timeLeft}s</h2>
+        <h1>Player: {currentPlayer?.name}</h1>
+        <h2>Time remaining: {timeLeft}s</h2>
         <Button color="white" variant="outlined" onClick={switchTurn}>
           End turn
         </Button>
