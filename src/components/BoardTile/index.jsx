@@ -1,13 +1,10 @@
 import { Box } from '@mui/material';
 import Piece from '../Piece';
-import { useEffect } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import selectedPieceAtom from '../../atoms/selectedPiece';
+import { useRecoilState } from 'recoil';
 import selectedTileAtom from '../../atoms/selectedTile';
 
 const BoardTile = ({ isLight, bgColor, id, pieceColor, position }) => {
   const [selectedTile, setSelectedTile] = useRecoilState(selectedTileAtom);
-  const selectedPiece = useRecoilValue(selectedPieceAtom);
 
   return (
     <>

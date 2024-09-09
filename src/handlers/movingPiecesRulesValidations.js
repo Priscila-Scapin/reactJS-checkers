@@ -1,34 +1,31 @@
-const isMovementDiagonal = (selectedPiece, selectedTile) => {
+const isMovementValid = (selectedPiece, selectedTile, notify) => {
+  const isSameDiagonal = (piece, tile) => {
+    return (
+      Math.abs(piece.rowIndex - tile.rowIndex) ===
+      Math.abs(piece.colIndex - tile.colIndex)
+    );
+  };
   switch (selectedPiece?.pieceColor) {
     case 'b':
-      const bRightDiagonal =
-        selectedPiece?.rowIndex - 1 === selectedTile?.rowIndex &&
-        selectedPiece?.colIndex + 1 === selectedTile?.colIndex;
+    case 'w':
+      const rowDiff = Math.abs(
+        selectedPiece?.rowIndex - selectedTile?.rowIndex
+      );
+      const colDiff = Math.abs(
+        selectedPiece?.colIndex - selectedTile?.colIndex
+      );
 
-      const bLeftDiagonal =
-        selectedPiece.rowIndex - 1 === selectedTile?.rowIndex &&
-        selectedPiece?.colIndex - 1 === selectedTile?.colIndex;
-
-      if (bRightDiagonal || bLeftDiagonal) {
+      if (rowDiff === 1 && colDiff === 1) {
         return true;
       } else {
-        //handleOpenModal();
-        // console.log('FORBIDDEN');
         return false;
       }
 
-    case 'w':
-      const wRightDiagonal =
-        selectedPiece.rowIndex + 1 === selectedTile?.rowIndex &&
-        selectedPiece?.colIndex - 1 === selectedTile?.colIndex;
-      const wLeftDiagonal =
-        selectedPiece.rowIndex + 1 === selectedTile?.rowIndex &&
-        selectedPiece?.colIndex + 1 === selectedTile?.colIndex;
-      if (wRightDiagonal || wLeftDiagonal) {
+    case 'bKing':
+    case 'wKing':
+      if (isSameDiagonal(selectedPiece, selectedTile)) {
         return true;
       } else {
-        console.log('FORBIDDEN', selectedTile);
-
         return false;
       }
 
@@ -73,69 +70,22 @@ const checkAdjacentTilesEmptiness = (selectedPiece, board) => {
   return emptyTiles.length > 0 ? emptyTiles : null;
 };
 
-const isDestinyTileEmpty = (selectedTile) => {
-  if (selectedTile?.content === null) {
-    return true;
-  } else {
-    return false;
-  }
-};
+const turnedIntoKing = (selectedPiece, boardState, setBoardState) => {
+  const newBoardState = boardState?.map((row) => [...row]);
 
-const isFromSameTeamPiece = (selectedTile, board) => {
-  switch (selectedTile?.content) {
-    case 'b':
-      const bRightAdjacentTile = {
-        rowIndex: selectedTile.rowIndex - 1,
-        colIndex: selectedTile.colIndex + 1,
-        value:
-          board[selectedTile.rowIndex - 1]?.[selectedTile.colIndex + 1] ?? null,
-      };
-      const bLeftAdjacentTile = {
-        rowIndex: selectedTile.rowIndex - 1,
-        colIndex: selectedTile.colIndex - 1,
-        value:
-          board[selectedTile.rowIndex - 1]?.[selectedTile.colIndex - 1] ?? null,
-      };
-
-      return {
-        rightAdjacentTile: bRightAdjacentTile,
-        leftAdjacentTile: bLeftAdjacentTile,
-      };
-
-    case 'w':
-      const wRightAdjacentTile = {
-        rowIndex: selectedTile.rowIndex + 1,
-        colIndex: selectedTile.colIndex + 1,
-        value:
-          board[selectedTile.rowIndex + 1]?.[selectedTile.colIndex + 1] ?? null,
-      };
-      const wLeftAdjacentTile = {
-        rowIndex: selectedTile.rowIndex + 1,
-        colIndex: selectedTile.colIndex - 1,
-        value:
-          board[selectedTile.rowIndex + 1]?.[selectedTile.colIndex - 1] ?? null,
-      };
-
-      return {
-        rightAdjacentTile: wRightAdjacentTile,
-        leftAdjacentTile: wLeftAdjacentTile,
-      };
-
-    default:
-      return null;
-  }
-};
-
-const turnedIntoKing = (pieceColor, selectedPiece) => {
-  switch (pieceColor) {
+  switch (selectedPiece?.pieceColor) {
     case 'w':
       if (selectedPiece?.rowIndex === 7) {
+        newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = 'wKing';
+        setBoardState(newBoardState);
         return true;
       }
       break;
 
     case 'b':
       if (selectedPiece?.rowIndex === 0) {
+        newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = 'bKing';
+        setBoardState(newBoardState);
         return true;
       }
       break;
@@ -189,9 +139,9 @@ const checkAdjacentTilesContent = (selectedPiece, selectedTile, board) => {
       break;
     }
 
-    case 'w': {
-      const rightOpponent = getAdjacentTile(1, 1);
-      const leftOpponent = getAdjacentTile(1, -1);
+    case 'bKing': {
+      const rightOpponent = getAdjacentTile(-1, 1);
+      const leftOpponent = getAdjacentTile(-1, -1);
 
       if (rightOpponent) {
         opponentPieces['right'] = rightOpponent;
@@ -202,39 +152,39 @@ const checkAdjacentTilesContent = (selectedPiece, selectedTile, board) => {
       break;
     }
 
+    case 'w': {
+      const rightOpponent = getAdjacentTile(1, 1);
+      const leftOpponent = getAdjacentTile(1, -1);
+
+      if (rightOpponent) {
+        opponentPieces['right'] = rightOpponent;
+      }
+      if (leftOpponent) {
+        opponentPieces['left'] = leftOpponent;
+      }
+
+      break;
+    }
+
+    case 'wKing': {
+      const rightOpponent = getAdjacentTile(1, 1);
+      const leftOpponent = getAdjacentTile(1, -1);
+
+      if (rightOpponent) {
+        opponentPieces['right'] = rightOpponent;
+      }
+      if (leftOpponent) {
+        opponentPieces['left'] = leftOpponent;
+      }
+
+      break;
+    }
+
     default:
       return null;
   }
 
   return Object.keys(opponentPieces).length > 0 ? opponentPieces : null;
-};
-
-const checkAdjacentValuesForOpponentPieces = (adjacentTiles, selectedPiece) => {
-  const cleanedFromNullAdjacents = [];
-
-  adjacentTiles?.flatMap((tile) => {
-    const rightAdjacent = tile?.rightAdjacent;
-    const leftAdjacent = tile?.leftAdjacent;
-
-    if (
-      rightAdjacent?.value !== null &&
-      rightAdjacent?.value !== selectedPiece?.pieceColor
-    ) {
-      cleanedFromNullAdjacents.push(rightAdjacent);
-    } else {
-      return [];
-    }
-    if (
-      leftAdjacent?.value !== null &&
-      leftAdjacent?.value !== selectedPiece.pieceColor
-    ) {
-      cleanedFromNullAdjacents.push(leftAdjacent);
-    } else {
-      return cleanedFromNullAdjacents;
-    }
-  });
-
-  return cleanedFromNullAdjacents;
 };
 
 const findCapturedPiece = (selectedPiece, selectedTile, board) => {
@@ -263,25 +213,6 @@ const findCapturedPiece = (selectedPiece, selectedTile, board) => {
   return null;
 };
 
-const getPlayerPieces = (playerColor, boardState) => {
-  const playerPieces = [];
-  for (let rowIndex = 0; rowIndex < boardState.length; rowIndex++) {
-    const row = boardState[rowIndex];
-
-    for (let colIndex = 0; colIndex < row.length; colIndex++) {
-      const cell = row[colIndex];
-
-      if (cell === playerColor) {
-        playerPieces.push({
-          position: { rowIndex, colIndex, pieceColor: cell },
-        });
-      }
-    }
-  }
-
-  return playerPieces;
-};
-
 const getValidCaptures = (positionsArray, selectedTile) =>
   positionsArray?.filter(
     (item) =>
@@ -289,17 +220,79 @@ const getValidCaptures = (positionsArray, selectedTile) =>
       item?.colIndex === selectedTile?.colIndex
   );
 
+const checkMissedCaptures = (pieces, board, currentPlayer) => {
+  const opponentColor = currentPlayer === 'b' ? 'w' : 'b';
+  const numRows = board.length;
+  const numCols = board[0].length;
+
+  const isTileEmpty = (rowIndex, colIndex) => {
+    return (
+      rowIndex >= 0 &&
+      rowIndex < numRows &&
+      colIndex >= 0 &&
+      colIndex < numCols &&
+      board[rowIndex][colIndex] === null
+    );
+  };
+
+  const getAdjacentTiles = (rowIndex, colIndex) => {
+    return [
+      { rowIndex: rowIndex - 1, colIndex: colIndex - 1 },
+      { rowIndex: rowIndex - 1, colIndex: colIndex + 1 },
+      { rowIndex: rowIndex + 1, colIndex: colIndex - 1 },
+      { rowIndex: rowIndex + 1, colIndex: colIndex + 1 },
+    ];
+  };
+
+  const checkCapturePossibility = (piece) => {
+    const { rowIndex, colIndex } = piece.position;
+
+    const adjacentTiles = getAdjacentTiles(rowIndex, colIndex);
+
+    for (const tile of adjacentTiles) {
+      const tileValue = board[tile.rowIndex]?.[tile.colIndex];
+      if (tileValue === opponentColor) {
+        // Verificar o tile vazio após o tile adversário
+        const landingTile = {
+          rowIndex: tile.rowIndex + (tile.rowIndex - rowIndex),
+          colIndex: tile.colIndex + (tile.colIndex - colIndex),
+        };
+
+        if (isTileEmpty(landingTile.rowIndex, landingTile.colIndex)) {
+          return {
+            piece,
+            opponentTile: tile,
+            landingTile: landingTile,
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const missedCaptures = [];
+
+  pieces.forEach((piece) => {
+    if (piece.color === currentPlayer) {
+      const capture = checkCapturePossibility(piece);
+      if (capture) {
+        missedCaptures.push(capture);
+      }
+    }
+  });
+
+  return missedCaptures.length > 0 ? missedCaptures : null;
+};
+
 const movingPiecesRulesValidations = {
   turnedIntoKing,
-  getPlayerPieces,
+  isMovementValid,
   getValidCaptures,
   findCapturedPiece,
-  isMovementDiagonal,
-  isDestinyTileEmpty,
-  isFromSameTeamPiece,
+  checkMissedCaptures,
   checkAdjacentTilesContent,
   checkAdjacentTilesEmptiness,
-  checkAdjacentValuesForOpponentPieces,
 };
 
 export default movingPiecesRulesValidations;

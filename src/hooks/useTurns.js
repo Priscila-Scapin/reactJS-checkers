@@ -3,13 +3,17 @@ import { useRecoilState } from 'recoil';
 import playerAtom from '../atoms/player';
 import movedPieceAtom from '../atoms/movedPiece';
 
-const useTurns = (initialPlayer = 'w') => {
+const useTurns = (initialPlayer = { piece: 'w', name: 'Player 1' }) => {
   const [currentPlayer, setCurrentPlayer] = useRecoilState(playerAtom);
   const [movedPiece, setMovedPiece] = useRecoilState(movedPieceAtom);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(5);
 
   const switchTurn = () => {
-    setCurrentPlayer(currentPlayer === 'w' ? 'b' : 'w');
+    if (currentPlayer?.name === 'Player 1') {
+      setCurrentPlayer({ piece: 'b', name: 'Player 2' });
+    } else {
+      setCurrentPlayer({ piece: 'w', name: 'Player 1' });
+    }
     setMovedPiece(null);
     resetTimer();
   };
@@ -20,7 +24,7 @@ const useTurns = (initialPlayer = 'w') => {
   };
 
   const resetTimer = () => {
-    setTimeLeft(10);
+    setTimeLeft(5);
   };
 
   useEffect(() => {

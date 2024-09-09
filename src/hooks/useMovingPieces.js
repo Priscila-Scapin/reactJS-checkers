@@ -6,22 +6,21 @@ import playerAtom from '../atoms/player';
 import winnerAtom from '../atoms/winner';
 import movedPieceAtom from '../atoms/movedPiece';
 import selectedPieceAtom from '../atoms/selectedPiece';
-import endOfTurnValidations from '../handlers/endOfTurnValidations';
 import movingPiecesRulesValidations from '../handlers/movingPiecesRulesValidations';
 
 const {
   turnedIntoKing,
-  getPlayerPieces,
+  isMovementValid,
   getValidCaptures,
   findCapturedPiece,
-  isMovementDiagonal,
+  // checkMissedCaptures,
   checkAdjacentTilesContent,
   checkAdjacentTilesEmptiness,
 } = movingPiecesRulesValidations;
 
-const { checkForWinner } = endOfTurnValidations;
-
-const useMovingPiecesEngine = () => {
+const useMovingPiecesEngine = (notify, setShowCaptureAnimation) => {
+  const moveSound = new Audio('./placingPieceSoundEffect.wav');
+  const captureSound = new Audio('./214018-8bit-explosion-6.wav');
   const currentPlayer = useRecoilValue(playerAtom);
   const [winner, setWinner] = useRecoilState(winnerAtom);
   const [boardState, setBoardState] = useRecoilState(boardAtom);
@@ -36,77 +35,112 @@ const useMovingPiecesEngine = () => {
   const { timeLeft } = useTurns();
 
   const getOpponent = () => {
-    if (currentPlayer === 'w') {
-      setOpponent('b');
+    if (currentPlayer?.name === 'Player 1') {
+      setOpponent({ piece: 'b', name: 'Player 2' });
     } else {
       setOpponent('w');
     }
   };
 
-  const handleSimpleMove = (selectedPiece, selectedTile) => {
-    if (currentPlayer === selectedPiece?.pieceColor && !movedPiece) {
-      const isMovingDiagonally = isMovementDiagonal(
-        selectedPiece,
-        selectedTile
-      );
-
+  const handleSimpleMove = (selectedPiece, selectedTile, captured) => {
+    if (currentPlayer?.piece === selectedPiece?.pieceColor && !movedPiece) {
       if (selectedPiece && selectedTile && selectedTile?.content === null) {
-        // Ensure that is a 1 tile movement:
-        const isOneStepMove =
-          Math.abs(selectedPiece.rowIndex - selectedTile.rowIndex) === 1 &&
-          Math.abs(selectedPiece.colIndex - selectedTile.colIndex) === 1;
-
-        if (isMovingDiagonally && isOneStepMove) {
+        const isMovingDiagonally = isMovementValid(
+          selectedPiece,
+          selectedTile,
+          notify
+        );
+        if (isMovingDiagonally) {
           const newBoardState = boardState.map((row) => [...row]);
           newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = null;
           newBoardState[selectedTile.rowIndex][selectedTile.colIndex] =
             selectedPiece.pieceColor;
-          checkForLeftCaptures();
+          // checkForLeftCaptures(selectedPiece, selectedTile, boardState);
           setMovedPiece(selectedPiece);
           setBoardState(newBoardState);
-        } else {
-          console.log(
-            'Movimento inválido: O jogador só pode mover uma casa por vez.'
-          );
+          moveSound.play();
+        }
+
+        if (!isMovingDiagonally && !captured) {
+          console.log('AQUIIIII', captured);
+          notify('❌ FORBIDDEN: Movement must be diagonal');
         }
       }
     }
+    if (currentPlayer?.piece !== selectedPiece?.pieceColor) {
+      notify('FORBIDDEN: await for your turn');
+      console.log('Invalid Move: Moving diagonally is required');
+    }
   };
 
-  const checkForLeftCaptures = () => {
+  const handleKingMove = (selectedPiece, selectedTile) => {
+    if (currentPlayer?.piece === selectedPiece?.pieceColor[0] && !movedPiece) {
+      const isMovementAllowed = isMovementValid(selectedPiece, selectedTile);
+
+      if (
+        selectedPiece &&
+        selectedTile &&
+        selectedTile?.content === null &&
+        isMovementAllowed
+      ) {
+        const newBoardState = boardState.map((row) => [...row]);
+        newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = null;
+        newBoardState[selectedTile.rowIndex][selectedTile.colIndex] =
+          selectedPiece.pieceColor;
+        // checkForLeftCaptures(selectedPiece, selectedTile, boardState);
+        setMovedPiece(selectedPiece);
+        setBoardState(newBoardState);
+      }
+    } else {
+      console.log('invalid movement');
+    }
+  };
+
+  const handleMove = (selectedPiece, selectedTile, captured) => {
+    console.log('CAP', captured);
+    switch (selectedPiece?.pieceColor) {
+      case 'b':
+      case 'w':
+        handleSimpleMove(selectedPiece, selectedTile, captured);
+
+        return;
+
+      case 'bKing':
+      case 'wKing':
+        handleKingMove(selectedPiece, selectedTile);
+        break;
+
+      default:
+        console.log('Invalid movement');
+        break;
+    }
+  };
+
+  const countPieces = (boardState, currentPlayer) => {
+    const piecesWithPositions = boardState.flatMap((row, rowIndex) =>
+      row
+        .map((piece, colIndex) => {
+          if (piece === currentPlayer?.piece) {
+            return { rowIndex, colIndex, piece };
+          }
+          return null;
+        })
+        .filter((item) => item !== null)
+    );
+
+    console.log('teste', piecesWithPositions);
+    return piecesWithPositions;
+  };
+
+  const checkingMissedCaptures = (selectedPiece, selectedTile, boardState) => {
     const numRows = boardState.length;
     const numCols = boardState[0].length;
+    const allPieces = countPieces(boardState, currentPlayer);
 
-    const countPieces = (boardState, currentPlayer) => {
-      const numRows = boardState.length;
-      const numCols = boardState[0].length;
+    const adjacentOpponentPieces = allPieces?.map((piece) =>
+      checkAdjacentTilesContent(piece, piece, boardState)
+    );
 
-      const piecesWithPositions = boardState.flatMap((row, rowIndex) =>
-        row
-          .map((piece, colIndex) => {
-            if (piece === currentPlayer) {
-              return { rowIndex, colIndex, piece };
-            }
-            return null;
-          })
-          .filter((item) => item !== null)
-      );
-
-      return piecesWithPositions;
-    };
-
-    const isTileOnBoard = (rowIndex, colIndex) => {
-      return (
-        rowIndex >= 0 &&
-        rowIndex < numRows &&
-        colIndex >= 0 &&
-        colIndex < numCols
-      );
-    };
-
-    const adjacentOpponentPieces = countPieces?.map((piece) => piece);
-
-    console.log('TEST', adjacentOpponentPieces);
     // if (adjacentOpponentPieces) {
     //   const validCaptures = Object.values(adjacentOpponentPieces)
     //     .flatMap((opponentPiece) =>
@@ -122,24 +156,39 @@ const useMovingPiecesEngine = () => {
     //   return validCaptures;
     // }
   };
-  console.log('BS', boardState[0]?.length);
 
   const removePieceDueLeftCapture = (leftCaptures) => {
     const newBoardState = boardState.map((row) => [...row]);
-    // if (leftCaptures) {
-    //   newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = null;
-    //   setBoardState(newBoardState);
-    // }
+    if (leftCaptures) {
+      newBoardState[selectedPiece.rowIndex][selectedPiece.colIndex] = null;
+      setBoardState(newBoardState);
+    }
+  };
+
+  const handleKingCapture = (selectedPiece, selectedTile) => {
+    const newBoardState = boardState.map((row) => [...row]);
+
+    const adjacentOpponentPieces = checkAdjacentTilesContent(
+      selectedPiece,
+      selectedTile,
+      boardState
+    );
   };
 
   const handleCapture = (selectedPiece, selectedTile) => {
-    if (currentPlayer === selectedPiece?.pieceColor && !movedPiece) {
+    if (currentPlayer?.piece !== selectedPiece?.pieceColor && selectedTile) {
+      notify('❌ FORBIDDEN: Await your turn');
+      return;
+    }
+
+    if (currentPlayer?.piece === selectedPiece?.pieceColor[0] && !movedPiece) {
       const newBoardState = boardState.map((row) => [...row]);
       const adjacentOpponentPieces = checkAdjacentTilesContent(
         selectedPiece,
         selectedPiece,
         boardState
       );
+
       if (adjacentOpponentPieces !== null) {
         const adjArray = Object.values(adjacentOpponentPieces);
         const checkForEmptyTilesAroundOpponent = adjArray?.map(
@@ -172,6 +221,7 @@ const useMovingPiecesEngine = () => {
             colIndex: selectedTile?.colIndex,
             pieceColor: selectedPiece?.pieceColor,
           });
+
           if (capturedPiece) {
             newBoardState[capturedPiece.position.rowIndex][
               capturedPiece.position.colIndex
@@ -180,15 +230,22 @@ const useMovingPiecesEngine = () => {
               null;
             newBoardState[selectedTile.rowIndex][selectedTile.colIndex] =
               selectedPiece.pieceColor;
-            setMovedPiece(null);
-            checkForLeftCaptures(selectedPiece, selectedTile, boardState);
 
-            setBoardState(newBoardState);
+            setMovedPiece(null);
+            captureSound.play();
+            setShowCaptureAnimation(true);
+
+            setTimeout(() => {
+              setShowCaptureAnimation(false);
+              setBoardState(newBoardState);
+              handleMove(selectedPiece, selectedTile, true);
+            }, 1000);
           }
+        } else {
+          handleMove(selectedPiece, selectedTile, true);
         }
       } else {
-        handleSimpleMove(selectedPiece, selectedTile);
-        checkForLeftCaptures(selectedPiece, selectedTile, boardState);
+        handleMove(selectedPiece, selectedTile, false);
       }
     }
   };
@@ -207,6 +264,7 @@ const useMovingPiecesEngine = () => {
   useEffect(() => {
     getOpponent();
     validateWinnerAndLeftCaptures();
+    turnedIntoKing(selectedPiece, boardState, setBoardState);
   }, [currentPlayer]);
 
   const movingPiecesEngine = (selectedPiece, selectedTile) => {

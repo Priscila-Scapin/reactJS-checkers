@@ -1,6 +1,4 @@
-import BoardTile from './components/BoardTile';
 import Board from './components/Board';
-import Piece from './components/Piece';
 import { RecoilRoot } from 'recoil';
 import './App.css';
 

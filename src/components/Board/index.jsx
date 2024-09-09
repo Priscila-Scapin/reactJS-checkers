@@ -1,56 +1,42 @@
 import { Box } from '@mui/material';
 import BoardTile from '../BoardTile';
-import DefaultModal from '../modals';
-import { useRecoilValue, useRecoilState } from 'recoil';
-import { useState, useEffect } from 'react';
 import boardAtom from '../../atoms/board';
+import useTurns from '../../hooks/useTurns';
+import { useState, useEffect } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from 'react-toastify';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import selectedTileAtom from '../../atoms/selectedTile';
 import selectedPieceAtom from '../../atoms/selectedPiece';
 import useMovingPieces from '../../hooks/useMovingPieces';
-import movingPiecesRulesValidations from '../../handlers/movingPiecesRulesValidations';
-import useTurns from '../../hooks/useTurns';
 
 const Board = () => {
-  const {
-    turnedIntoKing,
-    isMovementDiagonal,
-    isDestinyTileEmpty,
-    isFromSameTeamPiece,
-    checkAdjacentValuesForOpponentPieces,
-    checkAdjacentTilesEmptiness,
-  } = movingPiecesRulesValidations;
-
-  const { movingPiecesEngine } = useMovingPieces();
+  const notify = (message) => toast(message);
+  const [showCaptureAnimation, setShowCaptureAnimation] = useState(false);
+  const { movingPiecesEngine } = useMovingPieces(
+    notify,
+    setShowCaptureAnimation
+  );
   const { currentPlayer, timeLeft, switchTurn } = useTurns();
   const [boardState, setBoardState] = useRecoilState(boardAtom);
   const selectedTile = useRecoilValue(selectedTileAtom);
   const selectedPiece = useRecoilValue(selectedPieceAtom);
-
-  // const [openDialog, setOpenDialog] = useState(false);
-
-  // const handleOpenModal = () => {
-  //   setOpenDialog(true);
-  // };
-
-  // const handleCloseDialog = () => {
-  //   setOpenDialog(false);
-  // };
+  const captureAnimation = './captureAnimation.gif';
 
   const handleMovePiece = (selectedPiece, selectedTile) => {
-    movingPiecesEngine(selectedPiece, selectedTile);
+    movingPiecesEngine(selectedPiece, selectedTile, setShowCaptureAnimation);
   };
 
   useEffect(() => {
     if (selectedPiece?.colIndex !== '' && selectedTile?.colIndex !== '') {
       handleMovePiece(selectedPiece, selectedTile);
-      // movingPiecesEngine(boardState, selectedPiece, selectedTile);
     }
   }, [selectedPiece, selectedTile]);
-
+  console.log('ANIMATION', captureAnimation);
   return (
     <>
       <div>
-        <h1>Jogador atual: {currentPlayer}</h1>
+        <h1>Jogador atual: {currentPlayer?.name}</h1>
         <h2>Tempo restante: {timeLeft}s</h2>
         <button onClick={switchTurn}>Passar o turno</button>
       </div>
@@ -85,8 +71,34 @@ const Board = () => {
             />
           );
         })}
-        {/* <DefaultModal open={openDialog} handleClose={handleCloseDialog} /> */}
       </Box>
+      {showCaptureAnimation && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '20rem',
+            height: '20rem',
+          }}
+        >
+          <img
+            src={captureAnimation}
+            alt="Descrição do GIF"
+            width="800"
+            height="800"
+          />
+        </div>
+      )}
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        theme="light"
+      />
     </>
   );
 };
