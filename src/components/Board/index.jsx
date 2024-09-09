@@ -99,12 +99,7 @@ const Board = () => {
             height: '20rem',
           }}
         >
-          <img
-            src={captureAnimation}
-            alt="Descrição do GIF"
-            width="800"
-            height="800"
-          />
+          <img src={captureAnimation} alt="" width="800" height="800" />
         </div>
       )}
       <ToastContainer
