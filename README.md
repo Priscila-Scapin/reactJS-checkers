@@ -43,4 +43,8 @@ Built with:
 - [Recoil](https://recoiljs.org/): A state management library. Ensures data consistency and makes it easy to share and update state data between components and pages.
 - [Jest](https://jestjs.io/): A safe and trustable test library. Easy to set up and use.
 
-
+## Todos
+- Removing pieces due missed capture feature;
+- King capture mecanism;
+- Integration and unitary tests;
+- Sound effects optimization
