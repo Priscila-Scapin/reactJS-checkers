@@ -2,7 +2,10 @@ import { atom } from 'recoil';
 
 const winnerAtom = atom({
   key: 'winner',
-  default: '',
+  default: {
+    piece: '',
+    name: '',
+  },
 });
 
 export default winnerAtom;

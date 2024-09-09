@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import BoardTile from '../BoardTile';
 import boardAtom from '../../atoms/board';
 import useTurns from '../../hooks/useTurns';
@@ -7,17 +7,23 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast } from 'react-toastify';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import selectedTileAtom from '../../atoms/selectedTile';
+import winnerAtom from '../../atoms/winner';
 import selectedPieceAtom from '../../atoms/selectedPiece';
 import useMovingPieces from '../../hooks/useMovingPieces';
+import ConfettiExplosion from 'react-confetti-explosion';
 
 const Board = () => {
-  const notify = (message) => toast(message);
+  const [endOfGame, setEndOfGame] = useState(false);
   const [showCaptureAnimation, setShowCaptureAnimation] = useState(false);
+
+  const notify = (message) => toast(message);
   const { movingPiecesEngine } = useMovingPieces(
     notify,
     setShowCaptureAnimation
   );
   const { currentPlayer, timeLeft, switchTurn } = useTurns();
+
+  const winner = useRecoilValue(winnerAtom);
   const [boardState, setBoardState] = useRecoilState(boardAtom);
   const selectedTile = useRecoilValue(selectedTileAtom);
   const selectedPiece = useRecoilValue(selectedPieceAtom);
@@ -32,13 +38,24 @@ const Board = () => {
       handleMovePiece(selectedPiece, selectedTile);
     }
   }, [selectedPiece, selectedTile]);
-  console.log('ANIMATION', captureAnimation);
+
+  useEffect(() => {
+    if (winner?.name !== '') {
+      setEndOfGame(true);
+    }
+  }, [winner]);
+  const startNewGame = () => {
+    window.location.reload();
+  };
+
   return (
     <>
       <div>
         <h1>Jogador atual: {currentPlayer?.name}</h1>
         <h2>Tempo restante: {timeLeft}s</h2>
-        <button onClick={switchTurn}>Passar o turno</button>
+        <Button color="white" variant="outlined" onClick={switchTurn}>
+          End turn
+        </Button>
       </div>
       <Box
         sx={{
@@ -99,6 +116,65 @@ const Board = () => {
         rtl={false}
         theme="light"
       />
+      {endOfGame && (
+        <Box
+          sx={{
+            top: 0,
+            left: 0,
+            zIndex: 1000,
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            position: 'fixed',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <Box
+            sx={{
+              padding: 4,
+              width: '80%',
+              display: 'flex',
+              maxWidth: '600px',
+              borderRadius: '16px',
+              position: 'relative',
+              textAlign: 'center',
+              alignItems: 'center',
+              backgroundColor: '#404040',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              border: '3px solid white',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <ConfettiExplosion
+              style={{
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                pointerEvents: 'none',
+              }}
+            />
+            <Typography
+              variant="h1"
+              component="h2"
+              sx={{
+                zIndex: 1,
+                color: 'white',
+                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+              }}
+            >
+              {`${winner?.name} wins!!`}
+              <Button color="white" variant="outlined" onClick={startNewGame}>
+                Start new game
+              </Button>
+            </Typography>
+          </Box>
+        </Box>
+      )}
     </>
   );
 };

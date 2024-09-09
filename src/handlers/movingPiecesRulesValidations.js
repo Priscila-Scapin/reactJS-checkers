@@ -1,33 +1,71 @@
-const isMovementValid = (selectedPiece, selectedTile, notify) => {
-  const isSameDiagonal = (piece, tile) => {
+const isMovementValid = (selectedPiece, selectedTile, board) => {
+  const pieceColor = selectedPiece.pieceColor || selectedPiece.value;
+  const numRows = board?.length;
+  const numCols = board?.length;
+
+  const isOnBoard = (rowIndex, colIndex) => {
     return (
-      Math.abs(piece.rowIndex - tile.rowIndex) ===
-      Math.abs(piece.colIndex - tile.colIndex)
+      rowIndex >= 0 && rowIndex < numRows && colIndex >= 0 && colIndex < numCols
     );
   };
-  switch (selectedPiece?.pieceColor) {
-    case 'b':
-    case 'w':
-      const rowDiff = Math.abs(
-        selectedPiece?.rowIndex - selectedTile?.rowIndex
-      );
-      const colDiff = Math.abs(
-        selectedPiece?.colIndex - selectedTile?.colIndex
-      );
 
-      if (rowDiff === 1 && colDiff === 1) {
-        return true;
-      } else {
+  const getTileValue = (rowIndex, colIndex) => {
+    return isOnBoard(rowIndex, colIndex) ? board[rowIndex][colIndex] : null;
+  };
+
+  const isPathClear = (start, end) => {
+    const rowStep = end.rowIndex > start.rowIndex ? 1 : -1;
+    const colStep = end.colIndex > start.colIndex ? 1 : -1;
+
+    let row = start.rowIndex + rowStep;
+    let col = start.colIndex + colStep;
+
+    while (row !== end.rowIndex && col !== end.colIndex) {
+      if (getTileValue(row, col) !== null) {
         return false;
       }
+      row += rowStep;
+      col += colStep;
+    }
+    return true;
+  };
+
+  switch (pieceColor) {
+    case 'w':
+      if (
+        (selectedTile.rowIndex === selectedPiece.rowIndex + 1 &&
+          selectedTile.colIndex === selectedPiece.colIndex + 1) ||
+        (selectedTile.rowIndex === selectedPiece.rowIndex + 1 &&
+          selectedTile.colIndex === selectedPiece.colIndex - 1)
+      ) {
+        return (
+          getTileValue(selectedTile.rowIndex, selectedTile.colIndex) === null
+        );
+      }
+      return false;
+
+    case 'b':
+      if (
+        (selectedTile.rowIndex === selectedPiece.rowIndex - 1 &&
+          selectedTile.colIndex === selectedPiece.colIndex + 1) ||
+        (selectedTile.rowIndex === selectedPiece.rowIndex - 1 &&
+          selectedTile.colIndex === selectedPiece.colIndex - 1)
+      ) {
+        return (
+          getTileValue(selectedTile.rowIndex, selectedTile.colIndex) === null
+        );
+      }
+      return false;
 
     case 'bKing':
     case 'wKing':
-      if (isSameDiagonal(selectedPiece, selectedTile)) {
-        return true;
-      } else {
-        return false;
+      if (
+        Math.abs(selectedPiece.rowIndex - selectedTile.rowIndex) ===
+        Math.abs(selectedPiece.colIndex - selectedTile.colIndex)
+      ) {
+        return isPathClear(selectedPiece, selectedTile);
       }
+      return false;
 
     default:
       return false;
@@ -252,7 +290,6 @@ const checkMissedCaptures = (pieces, board, currentPlayer) => {
     for (const tile of adjacentTiles) {
       const tileValue = board[tile.rowIndex]?.[tile.colIndex];
       if (tileValue === opponentColor) {
-        // Verificar o tile vazio após o tile adversário
         const landingTile = {
           rowIndex: tile.rowIndex + (tile.rowIndex - rowIndex),
           colIndex: tile.colIndex + (tile.colIndex - colIndex),

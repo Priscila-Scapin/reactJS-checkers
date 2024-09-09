@@ -1,6 +1,8 @@
 import { Box } from '@mui/material';
 import Piece from '../Piece';
-import { useRecoilState } from 'recoil';
+import { useEffect } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import selectedPieceAtom from '../../atoms/selectedPiece';
 import selectedTileAtom from '../../atoms/selectedTile';
 
 const BoardTile = ({ isLight, bgColor, id, pieceColor, position }) => {

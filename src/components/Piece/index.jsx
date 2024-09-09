@@ -1,12 +1,12 @@
 import { Box } from '@mui/material';
 import React from 'react';
 import { useRecoilState } from 'recoil';
-import selectedTileAtom from '../../atoms/selectedTile';
 import selectedPieceAtom from '../../atoms/selectedPiece';
 
 const Piece = React.memo(
   ({ pieceColor, position }) => {
-    const [selectedPiece, setSelectedPiece] = useRecoilState(selectedPieceAtom);
+    const [_selectedPiece, setSelectedPiece] =
+      useRecoilState(selectedPieceAtom);
 
     return (
       <Box
